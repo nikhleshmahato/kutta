@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Profile | SkillHub</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Load Firebase SDKs -->
+  <script type="module">
+    // Import Firebase functions
+    import { db, auth } from "./firebase.js";
+    import { doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // Wait for DOM and auth to be ready
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Please sign in first!");
+        window.location.href = "index.html";
+        return;
+      }
+
+      // Load existing profile data
+      const profileRef = doc(db, "users", user.uid);
+      const profileSnap = await getDoc(profileRef);
+      
+      if (profileSnap.exists()) {
+        const data = profileSnap.data();
+        document.getElementById("name").value = data.name || "";
+        document.getElementById("skills").value = data.skills || "";
+        document.getElementById("interests").value = data.interests || "";
+        document.getElementById("is-mentor").checked = data.isMentor || false;
+      }
+
+      // Save profile on form submit
+      document.getElementById("profile-form").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await setDoc(profileRef, {
+          name: document.getElementById("name").value,
+          skills: document.getElementById("skills").value.split(',').map(skill => skill.trim()),
+          interests: document.getElementById("interests").value,
+          isMentor: document.getElementById("is-mentor").checked,
+          lastUpdated: new Date()
+        });
+        alert("Profile saved!");
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>My Profile</h1>
+  <form id="profile-form">
+    <label>Name:</label>
+    <input type="text" id="name" required>
+
+    <label>Skills (comma-separated):</label>
+    <input type="text" id="skills" placeholder="JavaScript, Python, Design" required>
+
+    <label>Interests:</label>
+    <textarea id="interests"></textarea>
+
+    <label>
+      <input type="checkbox" id="is-mentor"> I'm available as a mentor
+    </label>
+
+    <button type="submit">Save Profile</button>
+  </form>
+</body>
+</html>

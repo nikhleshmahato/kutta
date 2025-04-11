@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Find Collaborators | SkillHub</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module">
+    import { db } from "./firebase.js";
+    import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchForm = document.getElementById("search-form");
+      const resultsDiv = document.getElementById("results");
+
+      searchForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        resultsDiv.innerHTML = "<p>Searching...</p>";
+
+        const skill = document.getElementById("skill").value.toLowerCase();
+        const mentorsOnly = document.getElementById("mentors-only").checked;
+
+        // Build Firestore query
+        let q = query(collection(db, "users"));
+        
+        if (skill) {
+          q = query(q, where("skills", "array-contains", skill));
+        }
+        if (mentorsOnly) {
+          q = query(q, where("isMentor", "==", true));
+        }
+
+        // Execute query
+        const snapshot = await getDocs(q);
+        resultsDiv.innerHTML = "";
+
+        if (snapshot.empty) {
+          resultsDiv.innerHTML = "<p>No users found.</p>";
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const user = doc.data();
+          resultsDiv.innerHTML += `
+            <div class="user-card">
+              <h3>${user.name}</h3>
+              <p><strong>Skills:</strong> ${user.skills.join(', ')}</p>
+              <p><strong>Interests:</strong> ${user.interests || 'Not specified'}</p>
+              ${user.isMentor ? '<span class="mentor-tag">MENTOR</span>' : ''}
+            </div>
+          `;
+        });
+      });
+    });
+  </script>
+</head>
+<body>
+  <h1>Find Collaborators</h1>
+  <form id="search-form">
+    <input type="text" id="skill" placeholder="Search by skill (e.g., JavaScript)">
+    <label>
+      <input type="checkbox" id="mentors-only"> Show mentors only
+    </label>
+    <button type="submit">Search</button>
+  </form>
+  <div id="results"></div>
+</body>
+</html>
